@@ -7,6 +7,7 @@ import scipy.misc as misc
 import matplotlib.pyplot as plt
 
 import histograma
+import filtrado
 
 original = misc.imread('example1.png', True)
 
@@ -36,3 +37,11 @@ def histAdaptExample():
 	# Obtengo solo los valores del medio de la imagen
 	output = histograma.histAdapt(original, 96, 160)
 	outputHist(output)
+
+def convolveExample():
+	print(filtrado.gaussKernel1D(0.625))
+	output = filtrado.convolve(original, filtrado.gaussKernel1D(0.625))
+	outputHist(output)
+
+
+convolveExample()

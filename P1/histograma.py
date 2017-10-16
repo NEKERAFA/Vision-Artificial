@@ -56,7 +56,7 @@ def histAdapt( inputImage, minValue, maxValue ):
 			# Transformo el valor al de salida
 			outputValue = minValue + (maxValue-minValue)*(inputValue-minInput)/(maxInput-minInput)
 			# Capo para que no sobrepase el mínimo y el máximo valor de blanco y negro
-			outputImage[i][j] = int(max(min(outputValue, 255), 0))
+			outputImage[i][j] = int(outputValue)
 
 	# Devuelvo la imagen
 	return outputImage
