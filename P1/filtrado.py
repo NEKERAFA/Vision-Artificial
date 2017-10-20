@@ -59,7 +59,7 @@ def gaussKernel1D( sigma ):
 
 	for i in range(0, n):
 		x = i - (n // 2)
-		kernel[0, i] = exp(-x**2 / (2 * (sigma**2))) / (sqrt(2 * pi) * sigma)
+		kernel[0, i] = (1 / (sqrt(2 * pi) * sigma)) * exp((-x**2) / (2 * (sigma**2)))
 
 	return kernel
 
@@ -115,6 +115,8 @@ def highBoost( inputImage, A, method, parameter ):
 		smooth = gaussianFilter2D(inputImage, parameter)
 	elif method == 'median':
 		smooth = medianFilter2D(inputImage, parameter)
+	else:
+		print("> Método no reconocido")
 
 	# Obtengo las dimensiones
 	width, height = len(inputImage), len(inputImage[0])

@@ -94,6 +94,7 @@ def highBoost(pathInput, A, method, parameter, hist, pathOutput):
 	original = Input(pathInput, hist)
 	output = filtrado.highBoost(original, A, method, parameter)
 	print("> Hecho")
+	output = histograma.histAdapt(output, 0, 255)
 	Output(output, hist, pathOutput)
 	plt.show()
 
@@ -145,9 +146,10 @@ def main(argv):
 		gaussian(inputPath, float(args[0]), hist, outputPath)
 	elif method == "median" and len(args) == 1:
 		median(inputPath, int(args[0]), hist, outputPath)
-	elif method == "hightBoost" and len(args) == 3:
+	elif method == "highBoost" and len(args) == 3:
 		highBoost(inputPath, float(args[0]), args[1], float(args[2]), hist, outputPath)
 	else:
+		print("> Parámetros pasados:", method, inputPath, outputPath, hist, args)
 		print(usage)
 		sys.exit()
 
