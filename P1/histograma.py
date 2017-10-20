@@ -25,11 +25,11 @@ def histEnhance( inputImage, cenValue, winSize ):
 	for i in range(0, width):
 		for j in range(0, height):
 			# Obtengo el valor de entrada
-			inputValue = inputImage[i][j]
+			inputValue = inputImage[i, j]
 			# Transformo el valor al de salida
 			outputValue = m * inputValue + b
 			# Capo para que no sobrepase el mínimo y el máximo valor de blanco y negro
-			outputImage[i][j] = int(max(min(outputValue, 255), 0))
+			outputImage[i, j] = int(max(min(outputValue, 255), 0))
 
 	# Devuelvo la imagen
 	return outputImage
@@ -52,11 +52,11 @@ def histAdapt( inputImage, minValue, maxValue ):
 	for i in range(0, width):
 		for j in range(0, height):
 			# Obtengo el valor de entrada
-			inputValue = inputImage[i][j]
+			inputValue = inputImage[i, j]
 			# Transformo el valor al de salida
 			outputValue = minValue + (maxValue-minValue)*(inputValue-minInput)/(maxInput-minInput)
 			# Capo para que no sobrepase el mínimo y el máximo valor de blanco y negro
-			outputImage[i][j] = int(outputValue)
+			outputImage[i, j] = int(outputValue)
 
 	# Devuelvo la imagen
 	return outputImage
