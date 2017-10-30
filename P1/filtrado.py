@@ -12,8 +12,8 @@ def convolve( inputImage, kernel ):
 	'''
 
 	# Obtengo las dimensiones
-	width, height = len(inputImage), len(inputImage[0])
-	width_ker, height_ker = len(kernel), len(kernel[0])
+	width, height = inputImage.shape[0], inputImage.shape[1]
+	width_ker, height_ker = kernel.shape[0], kernel.shape[1]
 	# Creo la imagen de salida
 	outputImage = np.zeros([width, height])
 
@@ -82,7 +82,7 @@ def medianFilter2D( inputImage, filterSize ):
 	'''
 
 	# Obtengo las dimensiones
-	width, height = len(inputImage), len(inputImage[0])
+	width, height = inputImage.shape[0], inputImage.shape[1]
 	# Creo la imagen de salida
 	outputImage = np.zeros([width, height])
 
@@ -119,7 +119,7 @@ def highBoost( inputImage, A, method, parameter ):
 		print("> Método no reconocido")
 
 	# Obtengo las dimensiones
-	width, height = len(inputImage), len(inputImage[0])
+	width, height = inputImage.shape[0], inputImage.shape[1]
 	# Creo la imagen de salida
 	'''outputImage = np.zeros([width, height])
 

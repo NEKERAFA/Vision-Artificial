@@ -1,1 +1,2 @@
-*.pdf\n*\__pycache_
+*.pdf
+*\__pycache_\*

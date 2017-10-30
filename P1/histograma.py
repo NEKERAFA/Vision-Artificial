@@ -11,7 +11,7 @@ def histEnhance( inputImage, cenValue, winSize ):
 	'''
 
 	# Obtengo las dimensiones
-	width, height = len(inputImage), len(inputImage[0])
+	width, height = inputImage.shape[0], inputImage.shape[1]
 	# Creo la imagen de salida
 	outputImage = np.zeros([width, height])
 	# Obtengo los valores
@@ -41,7 +41,7 @@ def histAdapt( inputImage, minValue, maxValue ):
 	'''
 
 	# Obtengo las dimensiones
-	width, height = len(inputImage), len(inputImage[0])
+	width, height = inputImage.shape[0], inputImage.shape[1]
 	# Creo la imagen de salida
 	outputImage = np.zeros([width, height])
 	# Obtengo los valores máximo y mínimo del diagrama

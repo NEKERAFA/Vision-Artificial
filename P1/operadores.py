@@ -3,7 +3,92 @@
 	cierre para imágenes binarias. Ambas funciones deben permitir especificar el
 	tamaño del elemento estructurante y su forma (cuadrada, cruz, línea
 	horizontal o vertical).
-	donde strElType = 'square' | 'cross' | 'linev' | 'lineh'
+	donde ElType = 'square' | 'cross' | 'linev' | 'lineh'
 '''
 
-def erode(inputImage, strElType)
+import numpy as np
+from filtrado import convolve
+
+def EE( ElType, size ):
+	'''
+		Creo el elemento estucturante según el formato
+	'''
+
+	if ElType == 'square':
+		return np.ones([size, size])
+	elif ElType == 'linev':
+		return np.ones([1, size])
+	elif ElType == 'lineh':
+		return np.ones([size, 1])
+	elif ElType == 'cross':
+		kernel = np.zeros([size, size])
+		kernel[size // 2] = np.ones(size)
+		for i in range(0, size):
+			kernel[i, size // 2] = 1
+
+		return kernel
+
+def dilate( inputImage, ElType, size ):
+	# Creo el elmento estructurante
+	kernel = EE(ElType, size)
+	# Obtengo las dimensiones
+	width, height = inputImage.shape[0], inputImage.shape[1]
+	# Convoluciono
+	outputImage = convolve(inputImage, kernel)
+
+	# Aplico un umbral en 1 para dejar una imagen binaria
+	for i in range(0, width):
+		for j in range(0, height):
+			outputImage[i][j] = max(min(outputImage[i][j], 1), 0)
+
+	return outputImage
+
+def erode( inputImage, ElType, size ):
+	# Creo el elmento estructurante
+	kernel = EE(ElType, size)
+	# Obtengo el número de elementos a 1 del kernel
+	size = kernel.sum()
+	# Obtengo las dimensiones
+	width, height = inputImage.shape[0], inputImage.shape[1]
+	# Convoluciono
+	outputImage = convolve(inputImage, kernel)
+
+	# Miro si la cantidad de elementos a 1 en la imagen de salida es igual al
+	# del EE para dejar la imagen binaria
+	for i in range(0, width):
+		for j in range(0, height):
+			if outputImage[i][j] == size:
+				outputImage[i][j] = 1
+			else:
+				outputImage[i][j] = 0
+	return outputImage
+
+def opening( inputImage, ElType, size ):
+	outputImage = erode(inputImage, ElType, size)
+	outputImage = dilate(outputImage, ElType, size)
+	return outputImage
+
+def closing( inputImage, ElType, size ):
+	outputImage = dilate(inputImage, ElType, size)
+	outputImage = erode(outputImage, ElType, size)
+	return outputImage
+
+def tophatFilter( inputImage, ElType, size, mode ):
+	'''
+		Algoritmo basado en operadores morfológicos que permite calcular las
+		transformaciones Top Hat blanca y negra.
+		El filtro Top Hat blanco se define como la diferencia entre la imagen
+		original y una apertura mientras que el negro es la diferencia entre un
+		cierre y la imagen original.
+	'''
+
+	outputImage = None
+
+	if mode == 'white':
+		outputImage = inputImage - opening(inputImage, ElType, size)
+	elif mode == 'black':
+		outputImage = closing(inputImage, ElType, size) - inputImage
+	else:
+		print("> Método no reconocido")
+
+	return outputImage

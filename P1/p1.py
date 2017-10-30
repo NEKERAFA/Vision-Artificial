@@ -11,6 +11,7 @@ import sys, getopt
 
 import histograma
 import filtrado
+import operadores
 
 plot = 0
 
@@ -34,6 +35,16 @@ def showImg(image, title=None):
 	if not title is None:
 		plt.title(title)
 
+def showBinaryImg(image, title=None):
+	# Creo un nuevo plot
+	global plot
+	plot = plot+1
+	plt.figure(plot)
+	# Muestro la imagen
+	plt.imshow(image, cmap='gray', vmin = 0, vmax = 1)
+	if not title is None:
+		plt.title(title)
+
 def Input(path, hist):
 	original = misc.imread(path, True)
 	showImg(original, 'Imagen de entrada')
@@ -41,10 +52,27 @@ def Input(path, hist):
 		showHist(original, 'Histograma de entrada')
 	return original
 
+def InputBinary(path):
+	original = misc.imread(path, True)
+	for i in range(0, original.shape[0]):
+		for j in range(0, original.shape[1]):
+			if original[i][j] < 128:
+				original[i][j] = 0
+			else:
+				original[i][j] = 1
+
+	showBinaryImg(original, 'Imagen de entrada')
+	return original
+
 def Output(output, hist, path):
 	if hist:
 		showHist(output, 'Histograma de salida')
 	showImg(output, 'Imagen de salida')
+	if not path is None:
+		misc.imsave(path, output)
+
+def OutputBinary(output, path):
+	showBinaryImg(output, 'Imagen de salida')
 	if not path is None:
 		misc.imsave(path, output)
 
@@ -98,6 +126,46 @@ def highBoost(pathInput, A, method, parameter, hist, pathOutput):
 	Output(output, hist, pathOutput)
 	plt.show()
 
+def dilate(pathInput, ElType, size, pathOutput):
+	print("> Dilatación con EE " + ElType + " de tamaño " + str(size))
+	original = InputBinary(pathInput)
+	output = operadores.dilate(original, ElType, size)
+	print("> Hecho")
+	OutputBinary(output, pathOutput)
+	plt.show()
+
+def erode(pathInput, ElType, size, pathOutput):
+	print("> Erosion con EE " + ElType + " de tamaño " + str(size))
+	original = InputBinary(pathInput)
+	output = operadores.erode(original, ElType, size)
+	print("> Hecho")
+	OutputBinary(output, pathOutput)
+	plt.show()
+
+def opening(pathInput, ElType, size, pathOutput):
+	print("> Apertura con EE " + ElType + " de tamaño " + str(size))
+	original = InputBinary(pathInput)
+	output = operadores.opening(original, ElType, size)
+	print("> Hecho")
+	OutputBinary(output, pathOutput)
+	plt.show()
+
+def closing(pathInput, ElType, size, pathOutput):
+	print("> Cierre con EE " + ElType + " de tamaño " + str(size))
+	original = InputBinary(pathInput)
+	output = operadores.closing(original, ElType, size)
+	print("> Hecho")
+	OutputBinary(output, pathOutput)
+	plt.show()
+
+def tophatFilter(pathInput, ElType, size, mode, pathOutput):
+	print("> Filtro Top-Hat de modo " + mode + " con EE " + ElType + " de tamaño " + str(size))
+	original = InputBinary(pathInput)
+	output = operadores.tophatFilter(original, ElType, size, mode)
+	print("> Hecho")
+	OutputBinary(output, pathOutput)
+	plt.show()
+
 def main(argv):
 	inputPath = 'example1.png'
 	outputPath = None
@@ -110,7 +178,8 @@ def main(argv):
 			 '   --method = convolve <pathKernel>\n'
 			 '   --method = gaussian <sigma>\n'
 			 '   --method = median <filterSize>\n'
-			 '   --method = highBoost <A> <method> <parameter>')
+			 '   --method = highBoost <A> <method> <parameter>\n'
+			 '   --method = dilate <ElType> <size>')
 
 	try:
 		opts, args = getopt.getopt(argv, "m:i:o:h:", ["method=", "input=", "output=", "histogram="])
@@ -148,6 +217,16 @@ def main(argv):
 		median(inputPath, int(args[0]), hist, outputPath)
 	elif method == "highBoost" and len(args) == 3:
 		highBoost(inputPath, float(args[0]), args[1], float(args[2]), hist, outputPath)
+	elif method == "dilate" and len(args) == 2:
+		dilate(inputPath, args[0], int(args[1]), outputPath)
+	elif method == "erode" and len(args) == 2:
+		erode(inputPath, args[0], int(args[1]), outputPath)
+	elif method == "opening" and len(args) == 2:
+		opening(inputPath, args[0], int(args[1]), outputPath)
+	elif method == "closing" and len(args) == 2:
+		closing(inputPath, args[0], int(args[1]), outputPath)
+	elif method == "tophatFilter" and len(args) == 3:
+		tophatFilter(inputPath, args[0], int(args[1]), args[2], outputPath)
 	else:
 		print("> Parámetros pasados:", method, inputPath, outputPath, hist, args)
 		print(usage)
@@ -155,11 +234,3 @@ def main(argv):
 
 if __name__ == "__main__":
 	main(sys.argv[1:])
-
-#histEnhance()
-#histAdapt()
-#convolve()
-#gauss()
-#median()
-
-#highboost()
