@@ -3,6 +3,7 @@
 '''
 
 import numpy as np
+from progress import progress
 
 def histEnhance( inputImage, cenValue, winSize ):
 	'''
@@ -24,6 +25,8 @@ def histEnhance( inputImage, cenValue, winSize ):
 	# Recorro los píxeles de la imagen
 	for i in range(0, width):
 		for j in range(0, height):
+			# Feedback
+			progress(i*height+j, width*height)
 			# Obtengo el valor de entrada
 			inputValue = inputImage[i, j]
 			# Transformo el valor al de salida
@@ -31,6 +34,7 @@ def histEnhance( inputImage, cenValue, winSize ):
 			# Capo para que no sobrepase el mínimo y el máximo valor de blanco y negro
 			outputImage[i, j] = int(max(min(outputValue, 255), 0))
 
+	print()
 	# Devuelvo la imagen
 	return outputImage
 
@@ -51,6 +55,8 @@ def histAdapt( inputImage, minValue, maxValue ):
 	# Recorro los píxeles de la imagen
 	for i in range(0, width):
 		for j in range(0, height):
+			# Feedback
+			progress(i*height+j, width*height)
 			# Obtengo el valor de entrada
 			inputValue = inputImage[i, j]
 			# Transformo el valor al de salida
@@ -58,5 +64,6 @@ def histAdapt( inputImage, minValue, maxValue ):
 			# Capo para que no sobrepase el mínimo y el máximo valor de blanco y negro
 			outputImage[i, j] = int(outputValue)
 
+	print()
 	# Devuelvo la imagen
 	return outputImage

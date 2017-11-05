@@ -1,13 +1,18 @@
 '''
+	3. Funciones de operadores morfolódicos
+'''
+
+import numpy as np
+from filtrado import convolve
+from progress import progress
+
+'''
 	Implementar los operadores morfológicos de erosión, dilatación, apertura y
 	cierre para imágenes binarias. Ambas funciones deben permitir especificar el
 	tamaño del elemento estructurante y su forma (cuadrada, cruz, línea
 	horizontal o vertical).
 	donde ElType = 'square' | 'cross' | 'linev' | 'lineh'
 '''
-
-import numpy as np
-from filtrado import convolve
 
 def EE( ElType, size ):
 	'''
@@ -39,8 +44,11 @@ def dilate( inputImage, ElType, size ):
 	# Aplico un umbral en 1 para dejar una imagen binaria
 	for i in range(0, width):
 		for j in range(0, height):
+			# Feedback
+			progress(i*height+j, width*height, 'Convolucionando...')
 			outputImage[i][j] = max(min(outputImage[i][j], 1), 0)
 
+	print()
 	return outputImage
 
 def erode( inputImage, ElType, size ):
@@ -57,19 +65,27 @@ def erode( inputImage, ElType, size ):
 	# del EE para dejar la imagen binaria
 	for i in range(0, width):
 		for j in range(0, height):
+			# Feedback
+			progress(i*height+j, width*height, 'Convolucionando...')
 			if outputImage[i][j] == size:
 				outputImage[i][j] = 1
 			else:
 				outputImage[i][j] = 0
+
+	print()
 	return outputImage
 
 def opening( inputImage, ElType, size ):
+	print(">> Procesando erosion")
 	outputImage = erode(inputImage, ElType, size)
+	print(">> Procesando dilatación")
 	outputImage = dilate(outputImage, ElType, size)
 	return outputImage
 
 def closing( inputImage, ElType, size ):
+	print(">> Procesando dilatación")
 	outputImage = dilate(inputImage, ElType, size)
+	print(">> Procesando erosion")
 	outputImage = erode(outputImage, ElType, size)
 	return outputImage
 

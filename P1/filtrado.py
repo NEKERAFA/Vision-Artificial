@@ -4,6 +4,7 @@
 
 from math import *
 import numpy as np
+from progress import progress
 
 def convolve( inputImage, kernel ):
 	'''
@@ -20,30 +21,24 @@ def convolve( inputImage, kernel ):
 	# Recorro los píxeles de la imagen
 	for i in range(0, width):
 		for j in range(0, height):
-			'''
-			x_min = max(i - (width_ker // 2), 0)
-			x_max = min(i + (width_ker // 2), width)
-			y_min = max(j - (width_ker // 2), 0)
-			y_max = min(j + (width_ker // 2), width)
-
-			computeImput = inputImage[x_min:x_max, y_min:y_max]
-			computeKernel = kernel[]
-
-			outputImage[i][j] = np.sum(np.multiply(inputImage[x_min:x_max, y_min:y_max], kernel[]))
-
-			'''
+			# Feedback
+			progress(i*height+j, width*height, 'Convolucionando...')
+			# Valor central
 			value = 0
 
+			# Recorro los píxeles del kernel
 			for k in range(0, width_ker):
 				for l in range(0, height_ker):
 					x = i - (width_ker // 2) + k
 					y = j - (height_ker // 2) + l
 
+					# No convoluciono los que se salgan de la imagen
 					if x >= 0 and x < width and y >= 0 and y < height:
 						value = value + inputImage[x, y] * kernel[k, l]
 
 			outputImage[i, j] = value
 
+	print()
 	return outputImage
 
 def gaussKernel1D( sigma ):
@@ -70,7 +65,9 @@ def gaussianFilter2D( inputImage, sigma ):
 	'''
 
 	kernel = gaussKernel1D(sigma)
+	print(">> Procesando primera convolución gaussiana")
 	outputImage = convolve(inputImage, kernel)
+	print(">> Procesando segunda convolución gaussiana")
 	outputImage = convolve(outputImage, kernel.T)
 
 	return outputImage
@@ -89,6 +86,9 @@ def medianFilter2D( inputImage, filterSize ):
 	# Recorro los píxeles de la imagen
 	for i in range(0, width):
 		for j in range(0, height):
+			# Feedback
+			progress(i*height+j, width*height, 'Convolucionando...')
+
 			x_min = max(i - floor(filterSize / 2), 0)
 			x_max = min(i + ceil(filterSize / 2), width)
 			y_min = max(j - floor(filterSize / 2), 0)
@@ -96,6 +96,7 @@ def medianFilter2D( inputImage, filterSize ):
 
 			outputImage[i, j] = np.median(inputImage[x_min:x_max, y_min:y_max])
 
+	print()
 	return outputImage
 
 def highBoost( inputImage, A, method, parameter ):
@@ -121,14 +122,6 @@ def highBoost( inputImage, A, method, parameter ):
 	# Obtengo las dimensiones
 	width, height = inputImage.shape[0], inputImage.shape[1]
 	# Creo la imagen de salida
-	'''outputImage = np.zeros([width, height])
-
-	# Recorro los píxeles de la imagen
-
-	for i in range(0, width):
-		for j in range(0, height):
-			outputImage[i][j] = A * inputImage[i][j] - smooth[i][j]
-	'''
 	return A * inputImage - smooth
 
 	#return outputImage
