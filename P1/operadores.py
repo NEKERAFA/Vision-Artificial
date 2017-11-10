@@ -1,5 +1,5 @@
 '''
-	3. Funciones de operadores morfolódicos
+	3. Funciones de operadores morfológicos
 '''
 
 import numpy as np
@@ -22,9 +22,9 @@ def EE( ElType, size ):
 	if ElType == 'square':
 		return np.ones([size, size])
 	elif ElType == 'linev':
-		return np.ones([1, size])
-	elif ElType == 'lineh':
 		return np.ones([size, 1])
+	elif ElType == 'lineh':
+		return np.ones([1, size])
 	elif ElType == 'cross':
 		kernel = np.zeros([size, size])
 		kernel[size // 2] = np.ones(size)
@@ -46,7 +46,7 @@ def dilate( inputImage, ElType, size ):
 		for j in range(0, height):
 			# Feedback
 			progress(i*height+j, width*height, 'Convolucionando...')
-			outputImage[i][j] = max(min(outputImage[i][j], 1), 0)
+			outputImage[i][j] = min(outputImage[i][j], 1)
 
 	print()
 	return outputImage

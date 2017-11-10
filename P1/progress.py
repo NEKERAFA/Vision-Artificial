@@ -19,13 +19,13 @@
 # OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 import sys
 
+old_len = 0
 
 def progress(count, total, status='Procesando...'):
 	bar_len = 30
 
-	if ((bar_len * count % total) == 0) or (count+1 >= total):
-	    filled_len = int(round(bar_len * count / float(total)))
-
+	filled_len = int(round(bar_len * count / float(total)))
+	if old_len < filled_len:
 	    percents = int(round(100 * count / total, 1))
 	    bar = '=' * filled_len + '-' * (bar_len - filled_len)
 

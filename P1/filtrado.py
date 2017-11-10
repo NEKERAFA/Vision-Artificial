@@ -6,12 +6,8 @@ from math import *
 import numpy as np
 from progress import progress
 
+'''
 def convolve( inputImage, kernel ):
-	'''
-		Permite realizar un filtrado espacial sobre una imagen con un kernel
-		arbitrario que se pasará por parámetro.
-	'''
-
 	# Obtengo las dimensiones
 	width, height = inputImage.shape[0], inputImage.shape[1]
 	width_ker, height_ker = kernel.shape[0], kernel.shape[1]
@@ -38,6 +34,32 @@ def convolve( inputImage, kernel ):
 
 			outputImage[i, j] = value
 
+	print()
+	return outputImage
+'''
+
+def convolve(inputImage, kernel):
+	# Obtengo las dimensiones
+	row, col = inputImage.shape
+	row_k, col_k = kernel.shape
+	rowmid_k = row_k // 2
+	colmid_k = col_k // 2
+	# Creo la imagen de salida
+	convImg = np.zeros([row+rowmid_k*2, col+colmid_k*2])
+	convImg[rowmid_k:rowmid_k+row, colmid_k:colmid_k+col] = inputImage
+	outputImage = np.zeros(inputImage.shape)
+
+	# Recorro los píxeles de la imagen
+	for i in range(0, row):
+		for j in range(0, col):
+			#print(i, j)
+			# Feedback
+			progress(i*row+j, row*col, 'Convolucionando...')
+			imax = i+row_k
+			jmax = j+col_k
+
+			# Valor central
+			outputImage[i, j] = np.sum(convImg[i:imax, j:jmax] * kernel)
 	print()
 	return outputImage
 
