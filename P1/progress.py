@@ -20,14 +20,20 @@
 import sys
 
 old_len = 0
+bar_len = 40
 
 def progress(count, total, status='Procesando...'):
-	bar_len = 30
+	global old_len
+	global bar_len
 
 	filled_len = int(round(bar_len * count / float(total)))
-	if old_len < filled_len:
-	    percents = int(round(100 * count / total, 1))
-	    bar = '=' * filled_len + '-' * (bar_len - filled_len)
 
-	    sys.stdout.write('[%s] %s%s %s\r' % (bar, percents, '%', status))
-	    sys.stdout.flush()  # As suggested by Rom Ruben (see: http://stackoverflow.com/questions/3173320/text-progress-bar-in-the-console/27871113#comment50529068_27871113)
+	# Update only when it changes
+	if (count == total-1) or (old_len != filled_len):
+		old_len = filled_len
+
+		percents = int(round(100 * count / total, 1))
+		bar = '=' * filled_len + '-' * (bar_len - filled_len)
+
+		sys.stdout.write('[%s] %s%s %s\r' % (bar, percents, '%', status))
+		sys.stdout.flush()  # As suggested by Rom Ruben (see: http://stackoverflow.com/questions/3173320/text-progress-bar-in-the-console/27871113#comment50529068_27871113)

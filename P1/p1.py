@@ -8,13 +8,27 @@ import numpy as np
 import scipy.misc as misc
 import matplotlib.pyplot as plt
 import sys, getopt, math, time
-from progress import progress
+from timing import *
 
-import histograma
-import filtrado
-import operadores
-import bordes
+import hists
+import filters
+import bin_op
+import detectors
 
+'''
+	Variables globales
+'''
+
+# Imagen de entrada
+inputImg = None
+# Ruta de la imagen de entrada
+inputPath = None
+# Imagen de salida
+outputImg = None
+# Nombre de la imagen de salida
+outputName = None
+# Histograma
+histogram = False
 # Obtiene más información en los operadores grandes (Canny y Harrys)
 debug = False
 # Último plot hecho
@@ -46,293 +60,256 @@ def showImg(image, title=None, vmin=0, vmax=255):
 	if title is not None:
 		plt.title(title)
 
-def Input(path, hist):
+def Input():
 	'''
-		Carga una imagen y/o muestra su histograma
+		Carga la imagen de entrada y/o muestra su histograma
 	'''
+	global inputImg, inputPath, histogram
 	# Cargo una imagen y la muestra
-	original = misc.imread(path, True)
-	showImg(original, 'Imagen de entrada')
+	inputImg = misc.imread(inputPath, True)
+	showImg(inputImg, 'Imagen de entrada')
 	# Muestra el histograma si procediese
-	if hist:
-		showHist(original, 'Histograma de entrada')
-	return original
+	if histogram:
+		showHist(inputImg, 'Histograma de entrada')
 
-def InputBinary(path, hist):
+def InputBinary():
 	'''
-		Carga una imagen y la convierte en binaria
+		Carga una imagen para convertirla en binaria y/o muestra su histograma
 	'''
-	original = misc.imread(path, True)
+	global inputImg, inputPath, histogram
+	# Cargo una imagen
+	inputImg = misc.imread(inputPath, True)
 	# Recorro la imagen para dejarla en 0 o 1
-	for i in range(0, original.shape[0]):
-		for j in range(0, original.shape[1]):
-			original[i][j] = 0 if original[i][j] < 128 else 1
-	showImg(original, 'Imagen de entrada', 0, 1)
-	# Muestra el histograma si procediese
-	if hist:
-		showHist(original, 'Histograma de entrada', 0, 1)
-	return original
+	for i in range(0, inputImg.shape[0]):
+		for j in range(0, inputImg.shape[1]):
+			inputImg[i][j] = 0 if inputImg[i][j] < 128 else 1
 
-def Output(output, hist, path):
+	showImg(inputImg, 'Imagen de entrada', 0, 1)
+	# Muestra el histograma si procediese
+	if histogram:
+		showHist(inputImg, 'Histograma de entrada', 0, 1)
+
+def Output():
 	'''
 		Muestra una imagen de salida y/o la guarda
 	'''
+	global outputImg, outputName, histogram
 	# Guarda una imagen si pocediese
-	if path is not None:
-		misc.imsave(path + '.png', output)
+	if outputName is not None:
+		misc.imsave(outputName + '.png', outputImg)
 	# Muestra su histograma si procediese
-	if hist:
-		showHist(output, 'Histograma de salida')
+	if histogram:
+		showHist(outputImg, 'Histograma de salida')
 	# Muestra la imagen
-	showImg(output, 'Imagen de salida')
+	showImg(outputImg, 'Imagen de salida')
 
-def OutputBinary(output, hist, path):
+def OutputBinary():
 	'''
 		Muestra una imagen binaria y/o la guarda si procede
 	'''
+	global outputImg, outputName, histogram
 	# Guarda una imagen si pocediese
-	if path is not None:
-		misc.imsave(path + '.png', output)
+	if outputName is not None:
+		misc.imsave(outputName + '.png', outputImg)
 	# Muestra su histograma si procediese
-	if hist:
-		showHist(output, 'Histograma de salida', 0, 1)
+	if histogram:
+		showHist(outputImg, 'Histograma de salida', 0, 1)
 	# Muestra la imagen
-	showImg(output, 'Imagen de salida', 0, 1)
+	showImg(outputImg, 'Imagen de salida', 0, 1)
 
-def OutputOperator(output, title, hist, path):
+def OutputOperator(outputImg, operator=None, title='Imagen de salida', titleHist='Histograma de salida'):
 	'''
-		Muestra una imagen procedente de un operador ajustando el contraste y/o la guarda si procede
+		Muestra una imagen procedente de un operador ajustando el contraste
+		y/o la guarda si procede
 	'''
-	# Guarda la imagen si procediese
-	if path is not None:
-		misc.imsave(path + '.png', output)
-	# Muestra su histograma si procediese
-	if hist:
-		showHist(output, 'Histograma de ' + title, int(output.min()), int(output.max()))
-	# Muestra la imagen
-	showImg(output, title, output.min(), output.max())
-
-def histEnhance(pathInput, center, win, hist, nameOutput):
-	win = abs(win)
-	print("> Realce de contraste 'window-level' centrado en " + str(center) + " con ventana " + str(win))
-	original = Input(pathInput, hist)
-	output = histograma.histEnhance(original, center, win)
-	print("> Hecho")
-	Output(output, hist, nameOutput)
-	plt.show()
-
-def histAdapt(pathInput, minValue, maxValue, hist, nameOutput):
-	if minValue > maxValue:
-		print("> El valor mínimo tiene que ser más pequeño que el valor máximo")
-	print("> Compresion/estiramiento de histograma con valores [" + str(minValue) + ", " + str(maxValue) + "]")
-	original = Input(pathInput, hist)
-	output = histograma.histAdapt(original, minValue, maxValue)
-	print("> Hecho")
-	Output(output, hist, nameOutput)
-	plt.show()
-
-def convolve(pathInput, pathKernel, hist, nameOutput):
-	print("> Prueba de convolución")
-	original = Input(pathInput, hist)
-	kernel = misc.imread(pathKernel, True)
-	output = filtrado.convolve(original, kernel)
-	print("> Hecho")
-	Output(output, hist, nameOutput)
-	plt.show()
-
-def gaussian(pathInput, sigma, hist, nameOutput):
-	print("> Filtro Gaussiano con sigma " + str(sigma))
-	original = Input(pathInput, hist)
-	time1 = time.time()
-	output = filtrado.gaussianFilter2D(original, sigma)
-	time2 = time.time()
-	print('> Hecho en {:0.2f} ms'.format((time2-time1)*1000.0))
-	Output(output, hist, nameOutput)
-	plt.show()
-
-def median(pathInput, filterSize, hist, nameOutput):
-	print("> Filtro de medianas con tamaño " + str(filterSize))
-	original = Input(pathInput, hist)
-	output = filtrado.medianFilter2D(original, filterSize)
-	print("> Hecho")
-	Output(output, hist, nameOutput)
-	plt.show()
-
-def highBoost(pathInput, A, method, parameter, hist, nameOutput):
-	print("> High Boost con amplificación " + str(A) + " y método " + method + "(" + str(parameter) + ")")
-	original = Input(pathInput, hist)
-	output = filtrado.highBoost(original, A, method, parameter)
-	print("> Hecho")
-	output = histograma.histAdapt(output, 0, 255)
-	Output(output, hist, nameOutput)
-	plt.show()
-
-def dilate(pathInput, ElType, size, hist, nameOutput):
-	print("> Dilatación con EE " + ElType + " de tamaño " + str(size))
-	original = InputBinary(pathInput, hist)
-	output = operadores.dilate(original, ElType, size)
-	print("> Hecho")
-	OutputBinary(output, hist, nameOutput)
-	plt.show()
-
-def erode(pathInput, ElType, size, hist, nameOutput):
-	print("> Erosión con EE " + ElType + " de tamaño " + str(size))
-	original = InputBinary(pathInput, hist)
-	output = operadores.erode(original, ElType, size)
-	print("> Hecho")
-	OutputBinary(output, hist, nameOutput)
-	plt.show()
-
-def opening(pathInput, ElType, size, hist, nameOutput):
-	print("> Apertura con EE " + ElType + " de tamaño " + str(size))
-	original = InputBinary(pathInput, hist)
-	output = operadores.opening(original, ElType, size)
-	print("> Hecho")
-	OutputBinary(output, hist, nameOutput)
-	plt.show()
-
-def closing(pathInput, ElType, size, hist, nameOutput):
-	print("> Cierre con EE " + ElType + " de tamaño " + str(size))
-	original = InputBinary(pathInput, hist)
-	output = operadores.closing(original, ElType, size)
-	print("> Hecho")
-	OutputBinary(output, hist, nameOutput)
-	plt.show()
-
-def tophatFilter(pathInput, ElType, size, mode, hist, nameOutput):
-	print("> Filtro Top-Hat de modo " + mode + " con EE " + ElType + " de tamaño " + str(size))
-	original = InputBinary(pathInput, hist)
-	output = operadores.tophatFilter(original, ElType, size, mode)
-	print("> Hecho")
-	OutputBinary(output, hist, nameOutput)
-	plt.show()
-
-def derivatives(pathInput, operator, hist, nameOutput):
-	print("> Derivadas primeras con " + operator)
-	original = Input(pathInput, hist)
-	[gx, gy] = bordes.derivatives(original, operator)
-	print("> Hecho")
-	# Si hay nombre de salida, genera nuevos nombres para las derivadas
-	gx_name, gy_name = None, None
-	if nameOutput is not None:
-		gx_name = nameOutput + '_Gx'
-		gy_name = nameOutput + '_Gy'
-	OutputOperator(gx, 'Gx', hist, gx_name)
-	OutputOperator(gy, 'Gy', hist, gy_name)
-	plt.show()
-
-'''
-def listToImage(l, rows, cols, magnitude=None):
-	img = np.zeros([rows, cols])
-	len_list = len(l)
-
-	pix = 1
-	for (i, j) in l:
-		# Feedback
-		progress(pix, len_list, 'Creando ...')
-		# Pone el valor de la lista
-		if magnitude is None:
-			img[i, j] = 1
+	global outputName, histogram
+	# Guarda una imagen si pocediese
+	if outputName is not None:
+		if operator is None:
+			misc.imsave(outputName + '.png', outputImg)
 		else:
-			img[i, j] = magnitude[i, j]
-		pix += 1
+			misc.imsave(outputName + '_' + operator + '.png', outputImg)
+	# Muestra su histograma si procediese
+	if histogram:
+		showHist(outputImg, titleHist, int(outputImg.min()), int(outputImg.max()))
+	# Muestra la imagen
+	showImg(outputImg, title, int(outputImg.min()), int(outputImg.max()))
 
-	print()
-	return img
+'''
+	Funciones envoltorio
 '''
 
-def edgeCanny(pathInput, sigma, tlow, thigh, hist, nameOutput):
+def histEnhance(center, win):
+	global inputImg, outputImg
+	print("> Realce de contraste 'window-level' centrado en " + str(center) + " con ventana " + str(win))
+	Input()
+	outputImg = hists.histEnhance(inputImg, center, win)
+	Output()
+
+def histAdapt(minValue, maxValue):
+	global inputImg, outputImg
+	print("> Compresion/estiramiento de histograma con valores [" + str(minValue) + ", " + str(maxValue) + "]")
+	Input()
+	outputImg = hists.histAdapt(inputImg, minValue, maxValue)
+	Output()
+
+def convolve(pathKernel):
+	global inputImg, outputImg
+	print("> Prueba de convolución")
+	Input()
+	# Cargo el kernel
+	kernel = misc.imread(pathKernel, True)
+	convolve = timing(filters.convolve)
+	outputImg = convolve(inputImg, kernel)
+	Output()
+
+def gaussianFilter(sigma):
+	global inputImg, outputImg
+	print("> Filtro Gaussiano con sigma " + str(sigma))
+	Input()
+	gaussianFilter = timing(filters.gaussianFilter2D)
+	outputImg = gaussianFilter(inputImg, sigma)
+	Output()
+
+def medianFilter(filterSize):
+	global inputImg, outputImg
+	print("> Filtro de medianas con tamaño " + str(filterSize))
+	Input()
+	medianFilter = timing(filters.medianFilter2D)
+	outputImg = medianFilter(inputImg, filterSize)
+	Output()
+
+def highBoost(A, method, parameter):
+	global inputImg, outputImg, outputName
+	print("> High Boost con amplificación " + str(A) + " y método " + method + "(" + str(parameter) + ")")
+	Input()
+	outputImg = filters.highBoost(inputImg, A, method, parameter)
+	OutputOperator(outputImg, outputName, 'Imagen de salida')
+
+def dilate(ElType, size):
+	global inputImg, outputImg
+	print("> Dilatación con EE " + ElType + " de tamaño " + str(size))
+	InputBinary()
+	dilate = timing(bin_op.dilate)
+	outputImg = dilate(inputImg, ElType, size)
+	OutputBinary()
+
+def erode(ElType, size):
+	global inputImg, outputImg
+	print("> Erosión con EE " + ElType + " de tamaño " + str(size))
+	InputBinary()
+	erode = timing(bin_op.erode)
+	outputImg = erode(inputImg, ElType, size)
+	OutputBinary()
+
+def opening(ElType, size):
+	global inputImg, outputImg
+	print("> Apertura con EE " + ElType + " de tamaño " + str(size))
+	InputBinary()
+	opening = timing(bin_op.opening)
+	outputImg = opening(inputImg, ElType, size)
+	OutputBinary()
+
+def closing(ElType, size):
+	global inputImg, outputImg
+	print("> Cierre con EE " + ElType + " de tamaño " + str(size))
+	InputBinary()
+	closing = timing(bin_op.closing)
+	outputImg = closing(inputImg, ElType, size)
+	OutputBinary()
+
+def tophatFilter(ElType, size, mode):
+	global inputImg, outputImg
+	print("> Filtro Top-Hat de modo " + mode + " con EE " + ElType + " de tamaño " + str(size))
+	InputBinary()
+	outputImg = bin_op.tophatFilter(inputImg, ElType, size, mode)
+	OutputBinary()
+
+def derivatives(operator):
+	global inputImg
+	print("> Derivadas de primer orden con el método " + operator)
+	Input()
+	derivatives = timing(detectors.derivatives)
+	[gx, gy] = derivatives(inputImg, operator)
+	OutputOperator(gx, 'gx', 'Gradiente en x')
+	OutputOperator(gy, 'gy', 'Gradiente en y')
+
+def edgeCanny(sigma, tlow, thigh, mode='points'):
 	if tlow > thigh:
-		print("> Operador Canny: Error, el umbral bajo es mayor que el alto")
+		print(">> Operador Canny: El umbral bajo es mayor que el alto")
 		sys.exit(-1)
 
+	global inputImg
 	print("> Operador Canny con sigma " +  str(sigma) + ", umbral menor " + str(tlow) + " y umbral mayor " + str(thigh))
-	original = Input(pathInput, False)
-	border, gx, gy, magnitude, orientation, max_border = bordes.edgeCanny(original, sigma, tlow, thigh)
-	print("> Hecho")
+	Input()
+	border, gx, gy, magnitude, orientation, max_border = detectors.edgeCanny(inputImg, sigma, tlow, thigh, mode)
 
 	# Salidas para debug, estados intermedios
 	if debug:
-		gx_name, gy_name, mag_name, or_name, max_name = None, None, None, None, None
-		if nameOutput is not None:
-			gx_name  = nameOutput + '_gx'
-			gy_name  = nameOutput + '_gy'
-			mag_name = nameOutput + '_m'
-			or_name  = nameOutput + '_o'
-			max_name = nameOutput + '_s'
-
-		OutputOperator(gx, 'Gx', hist, gx_name)
-		OutputOperator(gy, 'Gy', hist, gy_name)
-		OutputOperator(magnitude, 'Magnitud', hist, mag_name)
-		OutputOperator(orientation, 'Orientacion', hist, or_name)
-		OutputOperator(max_border, 'Supresion no máxima', hist, max_name)
+		OutputOperator(gx, 'gx', 'Gradiente en x')
+		OutputOperator(gy, 'gy', 'Gradiente en y')
+		OutputOperator(magnitude, 'm', 'Magnitud')
+		OutputOperator(orientation, 'o', 'Orientacion')
+		OutputOperator(max_border, 'sup', 'Supresion no máxima')
 
 	# Salida de Canny
-	OutputOperator(border, 'Canny', hist, nameOutput)
+	OutputOperator(border, title = 'Operador Canny')
 	plt.show()
 
-def cornerHarris(pathInput, sigmaD, sigmaI, t, hist, nameOutput, k=0.06):
+def cornerHarris(sigmaD, sigmaI, t, mode='over'):
+	global inputImg
 	print('> Operador Harris con sigmaD ' + str(sigmaD) + ', sigmaI ' + str(sigmaI) + ' y umbral ' + str(t))
-	original = Input(pathInput, hist)
-	edges, gx, gy, ixy, ixx, iyy, sxx, syy, sxy, m, candidatos = bordes.cornerHarris(original, sigmaD, sigmaI, t, k)
-	print("> Hecho")
+	Input()
+	edges, gx, gy, ixy, ixx, iyy, sxx, syy, sxy, m, candidates = detectors.cornerHarris(inputImg, sigmaD, sigmaI, t, mode)
 
 	# Salidas para debug
 	if debug:
 		# Crear imagen de candidatos
 		print("> Creando imagen de candidatos")
-		umbral = np.zeros([original.shape[0], original.shape[1]])
+		umbral = np.zeros(inputImg.shape)
+		n, len_candidates
 		for (i, j) in candidatos:
+			progress(n, len_candidates, 'Creando...')
+			n += 1
 			umbral[i, j] = 1
 
-		gx_n, gy_n, ixx_n, iyy_n, ixy_n, sxx_n, syy_n, sxy_n, m_n, c_n = None, None, None, None, None, None, None, None, None, None
-		if nameOutput is not None:
-			gx_n  = nameOutput + '_gx'
-			gy_n  = nameOutput + '_gy'
-			ixx_n = nameOutput + '_ixx'
-			iyy_n = nameOutput + '_iyy'
-			ixy_n = nameOutput + '_ixy'
-			sxx_n = nameOutput + '_sxx'
-			syy_n = nameOutput + '_syy'
-			sxy_n = nameOutput + '_sxy'
-			m_n   = nameOutput + '_m'
-			c_n   = nameOutput + '_candidatos'
-
-		OutputOperator(gx, 'Gx', hist, gx_n)
-		OutputOperator(gy, 'Gy', hist, gy_n)
-		OutputOperator(ixx, 'Ixx', hist, ixx_n)
-		OutputOperator(iyy, 'Iyy', hist, iyy_n)
-		OutputOperator(ixy, 'Ixy', hist, ixy_n)
-		OutputOperator(sxx, 'Sxx', hist, sxx_n)
-		OutputOperator(syy, 'Syy', hist, syy_n)
-		OutputOperator(sxy, 'Sxy', hist, sxy_n)
-		OutputOperator(m, 'Matriz M', hist, m_n)
-		OutputOperator(umbral, 'Umbral de esquinas', hist, c_n)
+		OutputOperator(gx, 'gx', 'Gradiente en x')
+		OutputOperator(gy, 'gy', 'Gradiente en y')
+		OutputOperator(ixy, 'ixy', 'Ixy')
+		OutputOperator(ixx, 'ixx', 'Ixx')
+		OutputOperator(iyy, 'iyy', 'Iyy')
+		OutputOperator(sxy, 'sxy', 'Sxy')
+		OutputOperator(sxx, 'sxx', 'Sxx')
+		OutputOperator(syy, 'syy', 'Syy')
+		OutputOperator(m, 'm', 'Matriz M')
+		OutputOperator(umbral, 'c', 'Candidatos')
 
 	# Salida de Harrys
-	OutputOperator(edges, 'Esquinas', hist, nameOutput)
-	plt.show()
+	OutputOperator(edges, title = 'Operador Harrys')
 
 def main(argv):
-	inputPath = None
-	outputPath = None
+	global inputPath, outputName, histogram, debug
 	method = ''
-	hist = False
 	usage = ('./p1.py --input=<path> --output=<name> --histogram --debug --method=<method> <args>\n\n'
 	         'Methods and arguments:\n'
+			 '\t Histogram:\n'
 			 '   --method=histEnhance <cenValue> <winSize>\n'
-			 '   --method=histAdapt <minValue> <maxValue>\n'
+			 '   --method=histAdapt <minValue> <maxValue>\n\n'
+			 '\t Filters:\n'
 			 '   --method=convolve <pathKernel>\n'
-			 '   --method=gaussian <sigma>\n'
-			 '   --method=median <filterSize>\n'
-			 '   --method=highBoost <A> <method> <parameter>\n'
+			 '   --method=gaussianFilter2D <sigma>\n'
+			 '   --method=medianFilter2D <filterSize>\n'
+			 '   --method=highBoost <A> <method = black | white> <parameter>\n\n'
+			 '\t Morphological operators:\n'
+			 '\t ElType = square | lineh | linev | cross\n'
 			 '   --method=dilate <ElType> <size>\n'
 			 '   --method=erode <ElType> <size>\n'
 			 '   --method=opening <ElType> <size>\n'
 			 '   --method=closing <ElType> <size>\n'
-			 '   --method=topHat <ElType> <size> <mode>\n'
+			 '   --method=tophatFilter <ElType> <size> <mode>\n\n'
+			 '\t Detectors:\n'
 			 '   --method=derivatives <operator>\n'
-			 '   --method=canny <sigma> <tlow> <thigh>\n'
+			 '   --method=canny <sigma> <tlow> <thigh> [output = points | over | color]\n'
 			 '   --method=harris <sigmaD> <sigmaI> <t>')
 
 	try:
@@ -348,52 +325,56 @@ def main(argv):
 		elif opt in ("-i", "--input"):
 			inputPath = arg
 		elif opt in ("-o", "--output"):
-			outputPath = arg
+			outputName = arg
 		elif opt in ("-h", "--histogram"):
-			hist = True
+			histogram = True
 		elif opt in ("-d", "--debug"):
-			global debug
 			debug = True
 
 	if inputPath is None:
-		print('> Introduce al menos una ruta de imagen')
+		print('> Introduce al menos la ruta de imagen a usar')
 		print(usage)
 		sys.exit(-1)
 
+
 	if method == "histEnhance" and len(args) == 2:
-		histEnhance(inputPath, int(args[0]), int(args[1]), hist, outputPath)
+		histEnhance(int(args[0]), int(args[1]))
 	elif method == "histAdapt" and len(args) == 2:
-		histAdapt(inputPath, int(args[0]), int(args[1]), hist, outputPath)
+		histAdapt(int(args[0]), int(args[1]))
 	elif method == "convolve" and len(args) == 1:
-		convolve(inputPath, args[0], hist, outputPath)
-	elif method == "gaussian" and len(args) == 1:
-		gaussian(inputPath, float(args[0]), hist, outputPath)
-	elif method == "median" and len(args) == 1:
-		median(inputPath, int(args[0]), hist, outputPath)
+		convolve(args[0])
+	elif method == "gaussianFilter2D" and len(args) == 1:
+		gaussianFilter(float(args[0]))
+	elif method == "medianFilter2D" and len(args) == 1:
+		medianFilter(int(args[0]))
 	elif method == "highBoost" and len(args) == 3:
-		highBoost(inputPath, float(args[0]), args[1], float(args[2]), hist, outputPath)
+		highBoost(float(args[0]), args[1], float(args[2]))
 	elif method == "dilate" and len(args) == 2:
-		dilate(inputPath, args[0], int(args[1]), hist, outputPath)
+		dilate(args[0], int(args[1]))
 	elif method == "erode" and len(args) == 2:
-		erode(inputPath, args[0], int(args[1]), hist, outputPath)
+		erode(args[0], int(args[1]))
 	elif method == "opening" and len(args) == 2:
-		opening(inputPath, args[0], int(args[1]), hist, outputPath)
+		opening(args[0], int(args[1]))
 	elif method == "closing" and len(args) == 2:
-		closing(inputPath, args[0], int(args[1]), hist, outputPath)
-	elif method == "topHat" and len(args) == 3:
-		tophatFilter(inputPath, args[0], int(args[1]), args[2], hist, outputPath)
+		closing(args[0], int(args[1]))
+	elif method == "tophatFilter" and len(args) == 3:
+		tophatFilter(args[0], int(args[1]), args[2])
 	elif method == "derivatives" and len(args) == 1:
-		derivatives(inputPath, args[0], hist, outputPath)
-	elif method == "canny" and len(args) == 3:
-		edgeCanny(inputPath, float(args[0]), int(args[1]), int(args[2]), hist, outputPath)
-	elif method == "harris" and len(args) == 3:
-		cornerHarris(inputPath, float(args[0]), float(args[1]), int(args[2]), hist, outputPath)
-	elif method == "harris" and len(args) == 4:
-		cornerHarris(inputPath, float(args[0]), float(args[1]), int(args[2]), hist, outputPath, k=float(args[3]))
+		derivatives(args[0])
+	elif method == "edgeCanny" and len(args) == 3:
+		edgeCanny(float(args[0]), int(args[1]), int(args[2]))
+	elif method == "edgeCanny" and len(args) == 4:
+		edgeCanny(float(args[0]), int(args[1]), int(args[2]), args[3])
+	elif method == "cornerHarris" and len(args) == 3:
+		cornerHarris(float(args[0]), float(args[1]), int(args[2]))
+	elif method == "cornerHarris" and len(args) == 4:
+		cornerHarris(float(args[0]), float(args[1]), int(args[2]), args[3])
 	else:
-		print("> Parámetros pasados:", inputPath, outputPath, hist, debug, method, args)
+		print("> Método no reconocido ", method)
+		print("> Parámetros pasados:", inputPath, outputName, histogram, debug, method, args)
 		print(usage)
 		sys.exit()
+	plt.show()
 
 if __name__ == "__main__":
 	main(sys.argv[1:])
