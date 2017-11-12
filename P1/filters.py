@@ -4,9 +4,12 @@
 
 from math import *
 import numpy as np
-from progress import progress
+from progress import *
+from timing import *
 
 '''
+Antigua función convolve con bucles for
+@timing
 def convolve( inputImage, kernel ):
 	# Obtengo las dimensiones
 	width, height = inputImage.shape[0], inputImage.shape[1]
@@ -39,11 +42,16 @@ def convolve( inputImage, kernel ):
 '''
 
 def convolve(inputImage, kernel):
+	'''
+		Convolución mediante operaciones matriciales
+	'''
+
 	# Obtengo las dimensiones
 	row, col = inputImage.shape
 	row_k, col_k = kernel.shape
 	rowmid_k = row_k // 2
 	colmid_k = col_k // 2
+
 	# Creo la imagen de salida
 	convImg = np.zeros([row+rowmid_k*2, col+colmid_k*2])
 	convImg[rowmid_k:rowmid_k+row, colmid_k:colmid_k+col] = inputImage
@@ -57,7 +65,6 @@ def convolve(inputImage, kernel):
 			progress(i*row+j, row*col, 'Convolucionando...')
 			imax = i+row_k
 			jmax = j+col_k
-
 			# Valor central
 			outputImage[i, j] = np.sum(convImg[i:imax, j:jmax] * kernel)
 	print()
@@ -101,26 +108,26 @@ def medianFilter2D( inputImage, filterSize ):
 	'''
 
 	# Obtengo las dimensiones
-	width, height = inputImage.shape[0], inputImage.shape[1]
+	filas, columnas = inputImage.shape
 	# Creo la imagen de salida
-	outputImage = np.zeros([width, height])
+	outputImage = np.zeros(inputImage.shape)
 
 	# Recorro los píxeles de la imagen
-	for i in range(0, width):
-		for j in range(0, height):
+	for i in range(0, filas):
+		for j in range(0, columnas):
 			# Feedback
-			progress(i*height+j, width*height, 'Convolucionando...')
+			progress(i*filas+j, filas*columnas, 'Convolucionando...')
 
 			x_min = max(i - floor(filterSize / 2), 0)
-			x_max = min(i + ceil(filterSize / 2), width)
+			x_max = min(i + ceil(filterSize / 2), filas)
 			y_min = max(j - floor(filterSize / 2), 0)
-			y_max = min(j + ceil(filterSize / 2), height)
+			y_max = min(j + ceil(filterSize / 2), columnas)
 
 			outputImage[i, j] = np.median(inputImage[x_min:x_max, y_min:y_max])
-
 	print()
 	return outputImage
 
+@timing
 def highBoost( inputImage, A, method, parameter ):
 	'''
 		Permite especificar, además del factor de amplificación A, el método de
@@ -139,11 +146,7 @@ def highBoost( inputImage, A, method, parameter ):
 	elif method == 'median':
 		smooth = medianFilter2D(inputImage, parameter)
 	else:
-		print("> Método no reconocido")
+		print(">> Método no reconocido " + method)
 
-	# Obtengo las dimensiones
-	width, height = inputImage.shape[0], inputImage.shape[1]
 	# Creo la imagen de salida
 	return A * inputImage - smooth
-
-	#return outputImage

@@ -1,0 +1,27 @@
+· Requisitos: Tener instalando python3 (/usr/bin/python3) y scipy
+
+· Ejecución: ./p1.py --input=<path> --output=<name> --histogram --debug --method=<method> <args>
+
+Métodos y argumentos:
+	Histograma:
+		--method=histEnhance <cenValue> <winSize>
+		--method=histAdapt <minValue> <maxValue>
+
+    Filtros:
+	    --method=convolve <pathKernel>
+	    --method=gaussianFilter2D <sigma>
+	    --method=medianFilter2D <filterSize>
+	    --method=highBoost <A> <method = black | white> <parameter>
+
+    Operadores morfologicos:
+    ElType = square | lineh | linev | cross
+	    --method=dilate <ElType> <size>
+	    --method=erode <ElType> <size>
+	    --method=opening <ElType> <size>
+	    --method=closing <ElType> <size>
+	    --method=tophatFilter <ElType> <size> <mode>
+
+    Detectores de puntos característicos:
+	    --method=derivatives <operator>
+	    --method=canny <sigma> <tlow> <thigh> [output = points | over | color]
+	    --method=harris <sigmaD> <sigmaI> <t> [output = points | over | color]

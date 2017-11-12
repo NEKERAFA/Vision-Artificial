@@ -3,8 +3,9 @@
 '''
 
 import numpy as np
-from filtrado import convolve
-from progress import progress
+from filters import convolve
+from progress import *
+from timing import *
 
 '''
 	Implementar los operadores morfológicos de erosión, dilatación, apertura y
@@ -27,27 +28,28 @@ def EE( ElType, size ):
 		return np.ones([1, size])
 	elif ElType == 'cross':
 		kernel = np.zeros([size, size])
-		kernel[size // 2] = np.ones(size)
+		kernel[size//2] = np.ones(size)
+		kernel[0:size, size//2] = np.ones([1, size])
+		'''
 		for i in range(0, size):
 			kernel[i, size // 2] = 1
-
+		'''
 		return kernel
 
 def dilate( inputImage, ElType, size ):
 	# Creo el elmento estructurante
 	kernel = EE(ElType, size)
 	# Obtengo las dimensiones
-	width, height = inputImage.shape[0], inputImage.shape[1]
+	filas, columnas = inputImage.shape
 	# Convoluciono
 	outputImage = convolve(inputImage, kernel)
 
 	# Aplico un umbral en 1 para dejar una imagen binaria
-	for i in range(0, width):
-		for j in range(0, height):
+	for i in range(0, filas):
+		for j in range(0, columnas):
 			# Feedback
-			progress(i*height+j, width*height, 'Convolucionando...')
-			outputImage[i][j] = min(outputImage[i][j], 1)
-
+			progress(i*filas+j, filas*columnas)
+			outputImage[i][j] = max(min(outputImage[i][j], 1), 0)
 	print()
 	return outputImage
 
@@ -57,26 +59,22 @@ def erode( inputImage, ElType, size ):
 	# Obtengo el número de elementos a 1 del kernel
 	size = kernel.sum()
 	# Obtengo las dimensiones
-	width, height = inputImage.shape[0], inputImage.shape[1]
+	filas, columnas = inputImage.shape
 	# Convoluciono
 	outputImage = convolve(inputImage, kernel)
 
 	# Miro si la cantidad de elementos a 1 en la imagen de salida es igual al
 	# del EE para dejar la imagen binaria
-	for i in range(0, width):
-		for j in range(0, height):
+	for i in range(0, filas):
+		for j in range(0, columnas):
 			# Feedback
-			progress(i*height+j, width*height, 'Convolucionando...')
-			if outputImage[i][j] == size:
-				outputImage[i][j] = 1
-			else:
-				outputImage[i][j] = 0
-
+			progress(i*filas+j, filas*columnas, columnas)
+			outputImage[i][j] = 1 if outputImage[i][j] == size else 0
 	print()
 	return outputImage
 
 def opening( inputImage, ElType, size ):
-	print(">> Procesando erosion")
+	print(">> Procesando erosión")
 	outputImage = erode(inputImage, ElType, size)
 	print(">> Procesando dilatación")
 	outputImage = dilate(outputImage, ElType, size)
@@ -85,10 +83,11 @@ def opening( inputImage, ElType, size ):
 def closing( inputImage, ElType, size ):
 	print(">> Procesando dilatación")
 	outputImage = dilate(inputImage, ElType, size)
-	print(">> Procesando erosion")
+	print(">> Procesando erosión")
 	outputImage = erode(outputImage, ElType, size)
 	return outputImage
 
+@timing
 def tophatFilter( inputImage, ElType, size, mode ):
 	'''
 		Algoritmo basado en operadores morfológicos que permite calcular las
@@ -105,6 +104,6 @@ def tophatFilter( inputImage, ElType, size, mode ):
 	elif mode == 'black':
 		outputImage = closing(inputImage, ElType, size) - inputImage
 	else:
-		print("> Método no reconocido")
+		print(">> Método no reconocido " + mode)
 
 	return outputImage
